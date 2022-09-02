@@ -24,6 +24,14 @@ lt~obsolete.m4
 pm_to_blib
 stamp-h1
 MYMETA.*
+/irssi-1.pc
+/irssi
+/m4/
+/src/fe-common/irc/irc-modules.c
+/src/irc/irc.c
+ID
+tags
+/build/
 
 docs/help/Makefile.am
 docs/help/[a-z]*
@@ -33,6 +41,7 @@ docs/help/in/Makefile.am
 
 src/fe-text/irssi
 src/fe-fuzz/irssi-fuzz
+src/fe-none/botti
 src/fe-fuzz/irc/core/event-get-params-fuzz
 src/fe-fuzz/fe-common/core/theme-load-fuzz
 

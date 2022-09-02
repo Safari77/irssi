@@ -60,8 +60,6 @@ static void autoload_modules(void)
 
 void noui_init(void)
 {
-	srand(time(NULL));
-
 	irssi_gui = IRSSI_GUI_NONE;
 	core_init();
 

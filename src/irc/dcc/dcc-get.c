@@ -57,7 +57,10 @@ static void sig_dcc_destroyed(GET_DCC_REC *dcc)
 	if (!IS_DCC_GET(dcc)) return;
 
 	g_free_not_null(dcc->file);
-	if (dcc->fhandle != -1) close(dcc->fhandle);
+	if (dcc->fhandle != -1) {
+		fsync(dcc->fhandle);
+		close(dcc->fhandle);
+	}
 }
 
 char *dcc_get_download_path(const char *fname)
@@ -191,8 +194,7 @@ static void sig_dccget_receive(GET_DCC_REC *dcc)
 void sig_dccget_connected(GET_DCC_REC *dcc)
 {
 	struct stat statbuf;
-	char *fname, *tempfname, *str;
-        int ret, ret_errno, temphandle, old_umask;
+	char *fname, *str;
 
 	if (!dcc->from_dccserver) {
 		if (net_geterror(dcc->handle) != 0) {
@@ -207,7 +209,7 @@ void sig_dccget_connected(GET_DCC_REC *dcc)
 	}
 
 	g_free_not_null(dcc->file);
-	dcc->file = dcc_get_download_path(dcc->arg);
+	dcc->file = g_utf8_make_valid(dcc_get_download_path(dcc->arg), -1);
 
 	/* if some plugin wants to change the file name/path here.. */
 	signal_emit("dcc get receive", 1, dcc);
@@ -221,60 +223,11 @@ void sig_dccget_connected(GET_DCC_REC *dcc)
 	}
 
 	if (dcc->get_type != DCC_GET_RESUME) {
-		int dcc_file_create_mode = octal2dec(settings_get_int("dcc_file_create_mode"));
-
-		/* we want to overwrite the file, remove it here.
-		   if it gets created after this, we'll fail. */
-		unlink(dcc->file);
-
-		/* just to make sure we won't run into race conditions
-		   if download_path is in some global temp directory */
-		tempfname = g_strconcat(dcc->file, ".XXXXXX", NULL);
-
-                old_umask = umask(0077);
-		temphandle = mkstemp(tempfname);
-		umask(old_umask);
-
-		if (temphandle == -1)
-			ret = -1;
-		else {
-			if (fchmod(temphandle, dcc_file_create_mode) != 0)
-				g_warning("fchmod(3) failed: %s", strerror(errno));
-			/* proceed even if chmod fails */
-			ret = 0;
-		}
-
-		close(temphandle);
-
-		if (ret != -1) {
-			ret = link(tempfname, dcc->file);
-
-			if (ret == -1 &&
-			    /* Linux */
-			    (errno == EPERM ||
-			     /* FUSE */
-			     errno == ENOSYS || errno == EACCES ||
-			     /* BSD */
-			     errno == EOPNOTSUPP)) {
-				/* hard links aren't supported - some people
-				   want to download stuff to FAT/NTFS/etc
-				   partitions, so fallback to rename() */
-				ret = rename(tempfname, dcc->file);
-			}
-		}
-
-		/* if ret = 0, we're the file owner now */
-		dcc->fhandle = ret == -1 ? -1 :
-			open(dcc->file, O_WRONLY | O_TRUNC);
-
-		/* close/remove the temp file */
-		ret_errno = errno;
-		unlink(tempfname);
-		g_free(tempfname);
-
+		dcc->fhandle = open(dcc->file, O_WRONLY | O_EXCL | O_CLOEXEC | O_CREAT,
+				    octal2dec(settings_get_int("dcc_file_create_mode")));
 		if (dcc->fhandle == -1) {
 			signal_emit("dcc error file create", 3,
-				    dcc, dcc->file, g_strerror(ret_errno));
+				    dcc, dcc->file, g_strerror(errno));
 			dcc_destroy(DCC(dcc));
 			return;
 		}

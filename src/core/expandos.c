@@ -441,25 +441,25 @@ static char *expando_realname(SERVER_REC *server, void *item, int *free_ret)
 static char *expando_time(SERVER_REC *server, void *item, int *free_ret)
 {
 	time_t now;
-	struct tm *tm;
+	struct tm tm;
         char str[256];
 	char *format;
 
 	now = current_time != (time_t) -1 ? current_time : time(NULL);
-	tm = localtime(&now);
+	localtime_r(&now, &tm);
 	format = timestamp_format;
 
 	if (reference_time != (time_t) -1) {
 		time_t ref = reference_time;
 		struct tm tm_ref;
 		if (localtime_r(&ref, &tm_ref)) {
-			if (tm_ref.tm_yday != tm->tm_yday || tm_ref.tm_year != tm->tm_year) {
+			if (tm_ref.tm_yday != tm.tm_yday || tm_ref.tm_year != tm.tm_year) {
 				format = timestamp_format_alt;
 			}
 		}
 	}
 
-	if (strftime(str, sizeof(str), format, tm) == 0)
+	if (strftime(str, sizeof(str), format, &tm) == 0)
 		return "";
 
 	*free_ret = TRUE;
@@ -605,9 +605,6 @@ static void read_settings(void)
 
 void expandos_init(void)
 {
-#ifdef HAVE_SYS_UTSNAME_H
-	struct utsname un;
-#endif
 	settings_add_str("misc", "STATUS_OPER", "*");
 	settings_add_str("lookandfeel", "timestamp_format", "%H:%M");
 	settings_add_str("lookandfeel", "timestamp_format_alt", "%a %e %b %H:%M");
@@ -618,13 +615,6 @@ void expandos_init(void)
         last_timestamp = 0;
 
         sysname = sysrelease = sysarch = NULL;
-#ifdef HAVE_SYS_UTSNAME_H
-	if (uname(&un) >= 0) {
-		sysname = g_strdup(un.sysname);
-		sysrelease = g_strdup(un.release);
-		sysarch = g_strdup(un.machine);
-	}
-#endif
 
 	memset(char_expandos, 0, sizeof(char_expandos));
 	expandos = g_hash_table_new((GHashFunc) g_str_hash,

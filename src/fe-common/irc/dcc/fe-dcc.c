@@ -49,10 +49,12 @@ void fe_dcc_server_deinit(void);
 char *dcc_get_size_str(uoff_t size)
 {
 	if (size < 1024)
-		return g_strdup_printf("%"PRIuUOFF_T"B", size);
+		return g_strdup_printf("%"PRIuUOFF_T" B", size);
 	if (size < 1024*1024)
-		return g_strdup_printf("%"PRIuUOFF_T"kB", (size+1023) / 1024);
-	return g_strdup_printf("%"PRIuUOFF_T"MB", size / (1024*1024));
+		return g_strdup_printf("%"PRIuUOFF_T" KiB", (size+1023) / 1024);
+	if (size < 1024*1024*1024)
+		return g_strdup_printf("%"PRIuUOFF_T" MiB", size / (1024*1024));
+	return g_strdup_printf("%"PRIuUOFF_T" GiB", size / (1024*1024*1024));
 }
 
 static void dcc_request(DCC_REC *dcc)

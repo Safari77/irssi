@@ -433,8 +433,8 @@ int net_gethostbyname(const char *addr, IPADDR *ip4, IPADDR *ip6)
 		return HOST_NOT_FOUND; /* shouldn't happen? */
 
 	/* if there are multiple addresses, return random one */
-	use_v4 = count_v4 <= 1 ? 0 : rand() % count_v4;
-	use_v6 = count_v6 <= 1 ? 0 : rand() % count_v6;
+	use_v4 = count_v4 <= 1 ? 0 : g_random_int_range(0, count_v4);
+	use_v6 = count_v6 <= 1 ? 0 : g_random_int_range(0, count_v6);
 
 	count_v4 = count_v6 = 0;
 	for (ai = ailist; ai != NULL; ai = ai->ai_next) {

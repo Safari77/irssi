@@ -50,9 +50,13 @@ void session_upgrade(void)
 	if (session_args == NULL)
                 return;
 
+#if 0
 	execv(session_args[0], session_args);
 	fprintf(stderr, "exec failed: %s: %s\n",
 		session_args[0], g_strerror(errno));
+#else
+	fprintf(stderr, "exec* syscalls disabled by seccomp rules\n");
+#endif
 }
 
 /* SYNTAX: UPGRADE [<irssi binary path>] */
