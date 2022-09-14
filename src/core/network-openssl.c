@@ -769,10 +769,6 @@ static void set_server_temporary_key_info(TLS_REC *tls, SSL *ssl)
 	/* Show ephemeral key information. */
 	EVP_PKEY *ephemeral_key = NULL;
 
-	/* OPENSSL_NO_EC is for solaris 11.3 (2016), github ticket #598 */
-#ifndef OPENSSL_NO_EC
-	EC_KEY *ec_key = NULL;
-#endif
 	g_return_if_fail(tls != NULL);
 	g_return_if_fail(ssl != NULL);
 
