@@ -50,9 +50,6 @@ int net_gethostbyname_nonblock(const char *addr, GIOChannel *pipe, int reverse_l
 			  "Using blocking resolving");
 	}
 
-	/* child */
-	srand(time(NULL));
-
 	memset(&rec, 0, sizeof(rec));
 	rec.error = net_gethostbyname(addr, &rec.ip4, &rec.ip6);
 	if (rec.error == 0) {

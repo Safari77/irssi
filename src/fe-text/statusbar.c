@@ -509,7 +509,7 @@ STATUSBAR_REC *statusbar_create(STATUSBAR_GROUP_REC *group,
 		mainwindow_set_statusbar_lines(parent_window,
 					       config->placement == STATUSBAR_TOP,
 					       config->placement == STATUSBAR_BOTTOM);
-		theme = parent_window != NULL && parent_window->active != NULL &&
+			theme = parent_window != NULL && parent_window->active != NULL &&
 			parent_window->active->theme != NULL ?
 			parent_window->active->theme : current_theme;
 	}

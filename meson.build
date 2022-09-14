@@ -511,6 +511,11 @@ if want_capsicum
   endif
 endif
 
+dependency('libseccomp', version : '>= 2.3.1', required : true)
+libseccomp = cc.find_library('seccomp', required : true)
+
+dep += libseccomp
+
 # dependency helper sets
 dep_cflagsonly = []
 foreach d : dep
@@ -538,7 +543,6 @@ headers = [
   'sys/ioctl.h',
   'sys/resource.h',
   'sys/time.h',
-  'sys/utsname.h',
   'dirent.h',
   'term.h',
   'unistd.h',
@@ -566,6 +570,13 @@ add_project_arguments(cc.get_supported_arguments('-Werror=declaration-after-stat
 
 #### personality ####
 add_project_arguments(cc.get_supported_arguments('-fno-strict-aliasing'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-D_FORTIFY_SOURCE=3'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-fstack-protector-strong'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-fstack-clash-protection'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-fPIE'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-fcf-protection=full'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('-fsanitize=safe-stack,scudo'), language : 'c')
+add_project_arguments(cc.get_supported_arguments('--param=ssp-buffer-size=4'), language : 'c')
 if get_option('buildtype').contains('debug')
   add_project_arguments(cc.get_supported_arguments('-fno-omit-frame-pointer'), language : 'c')
 endif

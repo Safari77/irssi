@@ -18,6 +18,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <inttypes.h>
+
 #include "module.h"
 #include <irssi/src/core/signals.h>
 #include <irssi/src/core/commands.h>
@@ -438,7 +440,7 @@ static int dcc_send_one_file(int queue, const char *target, const char *fname,
 
 	/* Generate an ID for this send if using passive protocol */
 	if (passive) {
-		dcc->pasv_id = rand() % 64;
+		dcc->pasv_id = g_random_int() % INT32_MAX;
 	}
 
 	/* send DCC request */

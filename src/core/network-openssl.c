@@ -121,6 +121,40 @@ static const char *tls_dns_name(const GENERAL_NAME * gn)
 	return dnsname;
 }
 
+typedef struct {
+    unsigned int id;
+    void *ptr;
+} osslitems;
+
+static const osslitems standard_name2type[] = {
+    { EVP_PKEY_RSA,     "RSA" },
+    { EVP_PKEY_RSA_PSS, "RSA-PSS" },
+    { EVP_PKEY_EC,      "EC" },
+    { EVP_PKEY_ED25519, "ED25519" },
+    { EVP_PKEY_ED448,   "ED448" },
+    { EVP_PKEY_X25519,  "X25519" },
+    { EVP_PKEY_X448,    "X448" },
+    { EVP_PKEY_SM2,     "SM2" },
+    { EVP_PKEY_DH,      "DH" },
+    { EVP_PKEY_DHX,     "X9.42 DH" },
+    { EVP_PKEY_DHX,     "DHX" },
+    { EVP_PKEY_DSA,     "DSA" },
+};
+
+static const char *evp_pkey_type2name(int type)
+{
+	size_t i;
+	const char *p;
+
+	for (i = 0; i < ARRAY_SIZE(standard_name2type); i++) {
+		if (type == (int)standard_name2type[i].id)
+		return standard_name2type[i].ptr;
+	}
+
+	p = OBJ_nid2sn(type);
+	return (p) ?: "Unknown";
+}
+
 /* tls_text_name - extract certificate property value by name */
 static char *tls_text_name(X509_NAME *name, int nid)
 {
@@ -601,7 +635,9 @@ static void set_cipher_info(TLS_REC *tls, SSL *ssl)
 	tls_rec_set_cipher_size(tls, SSL_get_cipher_bits(ssl, NULL));
 }
 
-static gboolean set_pubkey_info(TLS_REC *tls, X509 *cert, unsigned char *cert_fingerprint, size_t cert_fingerprint_size, unsigned char *public_key_fingerprint, size_t public_key_fingerprint_size)
+static gboolean set_pubkey_info(TLS_REC *tls, X509 *cert, unsigned char *cert_fingerprint,
+				size_t cert_fingerprint_size, unsigned char *public_key_fingerprint,
+				size_t public_key_fingerprint_size)
 {
 	gboolean ret = TRUE;
 	EVP_PKEY *pubkey = NULL;
@@ -620,26 +656,7 @@ static gboolean set_pubkey_info(TLS_REC *tls, X509 *cert, unsigned char *cert_fi
 	cert_fingerprint_hex = binary_to_hex(cert_fingerprint, cert_fingerprint_size);
 	tls_rec_set_certificate_fingerprint(tls, cert_fingerprint_hex);
 	tls_rec_set_certificate_fingerprint_algorithm(tls, "SHA256");
-
-	/* Show algorithm. */
-	switch (EVP_PKEY_id(pubkey)) {
-		case EVP_PKEY_RSA:
-			tls_rec_set_public_key_algorithm(tls, "RSA");
-			break;
-
-		case EVP_PKEY_DSA:
-			tls_rec_set_public_key_algorithm(tls, "DSA");
-			break;
-
-		case EVP_PKEY_EC:
-			tls_rec_set_public_key_algorithm(tls, "EC");
-			break;
-
-		default:
-			tls_rec_set_public_key_algorithm(tls, "Unknown");
-			break;
-	}
-
+	tls_rec_set_public_key_algorithm(tls, evp_pkey_type2name(EVP_PKEY_id(pubkey)));
 	public_key_fingerprint_hex = binary_to_hex(public_key_fingerprint, public_key_fingerprint_size);
 	tls_rec_set_public_key_fingerprint(tls, public_key_fingerprint_hex);
 	tls_rec_set_public_key_size(tls, EVP_PKEY_bits(pubkey));
@@ -756,41 +773,12 @@ static void set_server_temporary_key_info(TLS_REC *tls, SSL *ssl)
 #ifndef OPENSSL_NO_EC
 	EC_KEY *ec_key = NULL;
 #endif
-	char *ephemeral_key_algorithm = NULL;
-	char *cname = NULL;
-	int nid;
-
 	g_return_if_fail(tls != NULL);
 	g_return_if_fail(ssl != NULL);
 
 	if (SSL_get_server_tmp_key(ssl, &ephemeral_key)) {
-		switch (EVP_PKEY_id(ephemeral_key)) {
-			case EVP_PKEY_DH:
-				tls_rec_set_ephemeral_key_algorithm(tls, "DH");
-				tls_rec_set_ephemeral_key_size(tls, EVP_PKEY_bits(ephemeral_key));
-				break;
-
-#ifndef OPENSSL_NO_EC
-			case EVP_PKEY_EC:
-				ec_key = EVP_PKEY_get1_EC_KEY(ephemeral_key);
-				nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec_key));
-				EC_KEY_free(ec_key);
-				cname = (char *)OBJ_nid2sn(nid);
-				ephemeral_key_algorithm = g_strdup_printf("ECDH: %s", cname);
-
-				tls_rec_set_ephemeral_key_algorithm(tls, ephemeral_key_algorithm);
-				tls_rec_set_ephemeral_key_size(tls, EVP_PKEY_bits(ephemeral_key));
-
-				g_free_and_null(ephemeral_key_algorithm);
-				break;
-#endif
-
-			default:
-				tls_rec_set_ephemeral_key_algorithm(tls, "Unknown");
-				tls_rec_set_ephemeral_key_size(tls, EVP_PKEY_bits(ephemeral_key));
-				break;
-		}
-
+		tls_rec_set_ephemeral_key_algorithm(tls, evp_pkey_type2name(EVP_PKEY_id(ephemeral_key)));
+		tls_rec_set_ephemeral_key_size(tls, EVP_PKEY_bits(ephemeral_key));
 		EVP_PKEY_free(ephemeral_key);
 	}
 #endif /* SSL_get_server_tmp_key. */

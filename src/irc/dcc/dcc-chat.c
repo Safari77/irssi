@@ -18,6 +18,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <inttypes.h>
+
 #include "module.h"
 #include <irssi/src/core/signals.h>
 #include <irssi/src/core/commands.h>
@@ -447,7 +449,6 @@ static void cmd_dcc_chat(const char *data, IRC_SERVER_REC *server)
 	IPADDR own_ip;
 	GIOChannel *handle;
 	GHashTable *optlist;
-	int p_id;
 	char *nick, host[MAX_IP_LEN];
 	int port;
 
@@ -524,15 +525,14 @@ static void cmd_dcc_chat(const char *data, IRC_SERVER_REC *server)
 		signal_emit("dcc request send", 1, dcc);
 
 		/* generate a random id */
-		p_id = rand() % 64;
-		dcc->pasv_id = p_id;
+		dcc->pasv_id = g_random_int() % INT32_MAX;
 
 		/* 16843009 is the long format of 1.1.1.1, we use a fake IP
 		   since the other side shouldn't care of it: they will send
 		   the address for us to connect to in the reply */
 		irc_send_cmdv(server,
 			      "PRIVMSG %s :\001DCC CHAT CHAT 16843009 0 %d\001",
-			      nick, p_id);
+			      nick, dcc->pasv_id);
 	}
 	cmd_params_free(free_arg);
 }
