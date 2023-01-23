@@ -28,7 +28,7 @@ jobs:
           TERMUX_PKG_MAINTAINER="@irssi"
           TERMUX_PKG_VERSION=@VERSION@
           TERMUX_PKG_REVISION=@REVISION@
-          TERMUX_PKG_SRCURL=file:///home/builder/termux-packages/src.irssi.git
+          TERMUX_PKG_SRCURL=git+file:///home/builder/termux-packages/src.irssi.git
           TERMUX_PKG_AUTO_UPDATE=true
           TERMUX_PKG_DEPENDS="glib, libandroid-glob, libiconv, libotr, ncurses, openssl, perl, utf8proc"
           TERMUX_PKG_BREAKS="irssi"
@@ -73,7 +73,7 @@ jobs:
       - name: build irssi package
         run: |
           sudo ./scripts/run-docker.sh ./build-package.sh -I irssi-an
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: irssi-termux-pkg
           path: output/irssi-an*.deb
