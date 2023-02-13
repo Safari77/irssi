@@ -607,6 +607,12 @@ pc_requires = []
 if not glib_internal
   pc_requires += glib_dep
 endif
+signalsfile = docdir / 'signals.txt'
+if signalsfile.startswith('/')
+  signalsfile = signalsfile.replace(get_option('prefix'), '${prefix}')
+else
+  signalsfile = '${prefix}' / signalsfile
+endif
 pc.generate(filebase : 'irssi-1',
   name : 'Irssi',
   description : 'Irssi chat client',
@@ -614,7 +620,7 @@ pc.generate(filebase : 'irssi-1',
   requires : pc_requires,
   variables : [
     'irssimoduledir=${libdir}' / incdir / 'modules',
-    'signalsfile=${prefix}' / docdir / 'signals.txt'
+    'signalsfile=' + signalsfile
   ])
 
 ###########
