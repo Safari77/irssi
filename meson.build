@@ -77,6 +77,16 @@ def_scriptdir  = '-D' + 'SCRIPTDIR'  + '="' + (get_option('prefix') / scriptdir)
 
 def_suppress_printf_fallback = '-D' + 'SUPPRESS_PRINTF_FALLBACK'
 
+
+module_suffix = []
+perl_module_suffix = []
+# Meson uses the wrong module extensions on Mac.
+# https://gitlab.gnome.org/GNOME/glib/issues/520
+if ['darwin', 'ios'].contains(host_machine.system())
+  module_suffix = 'so'
+  perl_module_suffix = 'bundle'
+endif
+
 ##############
 # Help files #
 ##############
@@ -379,6 +389,11 @@ if want_perl
   perl_version = meson.get_cross_property('perl_version', UNSET)
   if perl_version == UNSET
     perl_version = run_command(cross_perl, '-V::version:', check : true).stdout().split('\'')[1]
+  endif
+
+  # disable clang warning
+  if perl_version.version_compare('<5.35.2')
+    perl_cflags += cc.get_supported_arguments('-Wno-compound-token-split-by-macro')
   endif
   perl_dep = declare_dependency(compile_args : perl_cflags, link_args : perl_ldflags,
     version : perl_version)
