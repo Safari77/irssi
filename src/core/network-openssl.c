@@ -28,6 +28,7 @@
 #include <irssi/src/core/tls.h>
 
 #include <openssl/crypto.h>
+#include <openssl/objects.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
@@ -766,9 +767,7 @@ static void set_peer_cert_chain_info(TLS_REC *tls, SSL *ssl)
 static void set_server_temporary_key_info(TLS_REC *tls, SSL *ssl)
 {
 #ifdef SSL_get_server_tmp_key
-	/* Show ephemeral key information. */
 	EVP_PKEY *ephemeral_key = NULL;
-
 	g_return_if_fail(tls != NULL);
 	g_return_if_fail(ssl != NULL);
 
