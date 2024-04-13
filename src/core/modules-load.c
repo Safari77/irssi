@@ -207,7 +207,9 @@ static int module_load_name(const char *path, const char *rootmodule,
 		return 0;
 	}
 
-	/* get the module's irssi abi version and bail out on mismatch */
+	// load the module's _abicheck symbol.
+	// -fvisibility=hidden causes problems unless each function/variable
+	// is declared with G_MODULE_EXPORT
 	versionfunc = module_get_func(rootmodule, submodule, "abicheck");
 	if (!g_module_symbol(gmodule, versionfunc, &value_version)) {
 		g_free(versionfunc);
@@ -217,6 +219,7 @@ static int module_load_name(const char *path, const char *rootmodule,
 		return 0;
 	}
 	g_free(versionfunc);
+	/* get the module's irssi abi version function and bail out on mismatch */
 	module_version = value_version;
 	module_version(&module_abi_version);
 	if (module_abi_version != IRSSI_ABI_VERSION) {
