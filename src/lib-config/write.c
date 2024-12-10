@@ -364,7 +364,10 @@ int config_write(CONFIG_REC *rec, const char *fname, int create_mode)
 		goto out;
 	}
 
-	ret = fsync(fd);
+	do {
+		ret = fsync(fd);
+	} while ((ret == -1) && (errno == EINTR));
+	if ((ret == -1) && (errno == EINVAL)) ret = 0;
 	save_errno = errno;
 
 	if (ret == -1) {
