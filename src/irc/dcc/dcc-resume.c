@@ -192,7 +192,7 @@ static void dcc_send_resume(GET_DCC_REC *dcc)
         g_return_if_fail(dcc != NULL);
 
 	dcc->file = dcc_get_download_path(dcc->arg);
-	dcc->fhandle = open(dcc->file, O_WRONLY);
+	dcc->fhandle = open(dcc->file, O_WRONLY | O_NOFOLLOW | O_CLOEXEC);
 	if (dcc->fhandle == -1) {
 		signal_emit("dcc error file open", 3, dcc->nick, dcc->file,
 			    GINT_TO_POINTER(errno));
