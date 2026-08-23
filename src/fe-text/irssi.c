@@ -19,7 +19,7 @@
 */
 
 #ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
+#define _GNU_SOURCE
 #endif
 
 #include "module.h"
@@ -29,6 +29,7 @@
 #include <irssi/src/core/signals.h>
 #include <irssi/src/core/levels.h>
 #include <irssi/src/core/core.h>
+#include <irssi/src/core/misc.h>
 #include <irssi/src/core/settings.h>
 #include <irssi/src/core/session.h>
 #include <irssi/src/core/servers.h>
@@ -46,6 +47,7 @@
 #include <irssi/src/fe-text/statusbar.h>
 #include <irssi/src/fe-text/gui-windows.h>
 #include <irssi/irssi-version.h>
+#include <irssi/src/irc/dcc/dcc.h>
 
 #include <signal.h>
 #include <locale.h>
@@ -79,10 +81,9 @@ int quitting;
 static int display_firsttimer = FALSE;
 static unsigned int user_settings_changed = 0;
 
-
 static void sig_exit(void)
 {
-        quitting = TRUE;
+	quitting = TRUE;
 }
 
 static void sig_settings_userinfo_changed(gpointer changedp)
@@ -109,12 +110,12 @@ static void sig_autoload_modules(void)
 void irssi_redraw(void)
 {
 	dirty = TRUE;
-        full_redraw = TRUE;
+	full_redraw = TRUE;
 }
 
 void irssi_set_dirty(void)
 {
-        dirty = TRUE;
+	dirty = TRUE;
 }
 
 static void dirty_check(void)
@@ -122,10 +123,10 @@ static void dirty_check(void)
 	if (!dirty)
 		return;
 
-        term_resize_dirty();
+	term_resize_dirty();
 
 	if (full_redraw) {
-                full_redraw = FALSE;
+		full_redraw = FALSE;
 
 		/* first clear the screen so curses will be
 		   forced to redraw the screen */
@@ -137,10 +138,10 @@ static void dirty_check(void)
 	}
 
 	mainwindows_redraw_dirty();
-        statusbar_redraw_dirty();
+	statusbar_redraw_dirty();
 	term_refresh(NULL);
 
-        dirty = FALSE;
+	dirty = FALSE;
 }
 
 static void textui_init(void)
@@ -214,11 +215,11 @@ static void textui_finish_init(void)
 	statusbar_redraw(NULL, TRUE);
 
 	if (servers == NULL && lookup_servers == NULL) {
-		printformat(NULL, NULL, MSGLEVEL_CRAP|MSGLEVEL_NO_ACT, TXT_IRSSI_BANNER);
+		printformat(NULL, NULL, MSGLEVEL_CRAP | MSGLEVEL_NO_ACT, TXT_IRSSI_BANNER);
 	}
 
 	if (display_firsttimer) {
-		printformat(NULL, NULL, MSGLEVEL_CRAP|MSGLEVEL_NO_ACT, TXT_WELCOME_FIRSTTIME);
+		printformat(NULL, NULL, MSGLEVEL_CRAP | MSGLEVEL_NO_ACT, TXT_WELCOME_FIRSTTIME);
 	}
 
 	/* see irc-servers-setup.c:init_userinfo */
@@ -240,7 +241,7 @@ static void textui_deinit(void)
 {
 	signal(SIGINT, SIG_DFL);
 
-        term_refresh_freeze();
+	term_refresh_freeze();
 	while (modules != NULL)
 		module_unload(modules->data);
 
@@ -281,15 +282,16 @@ static void check_files(void)
 		/* ~/.irssi doesn't exist, first time running irssi */
 		display_firsttimer = TRUE;
 	}
+
+	/* cannot check download/upload dir here yet */
 }
 
 int main(int argc, char **argv)
 {
 	static int version = 0;
-	static GOptionEntry options[] = {
-		{ "version", 'v', 0, G_OPTION_ARG_NONE, &version, "Display Irssi version", NULL },
-		{ NULL }
-	};
+	static GOptionEntry options[] = { { "version", 'v', 0, G_OPTION_ARG_NONE, &version,
+		                            "Display Irssi version", NULL },
+		                          { NULL } };
 	int loglev;
 
 	core_register_options();
@@ -297,9 +299,9 @@ int main(int argc, char **argv)
 	args_register(options);
 	args_execute(argc, argv);
 
- 	if (version) {
-		printf(PACKAGE_TARNAME" " PACKAGE_VERSION" (%d %04d)\n",
-		       IRSSI_VERSION_DATE, IRSSI_VERSION_TIME);
+	if (version) {
+		printf(PACKAGE_TARNAME " " PACKAGE_VERSION " (%d %04d)\n", IRSSI_VERSION_DATE,
+		       IRSSI_VERSION_TIME);
 		return 0;
 	}
 
@@ -337,7 +339,7 @@ int main(int argc, char **argv)
 		int rc = 0;
 
 		ctx = seccomp_init(SCMP_ACT_ERRNO(EPERM));
-		//ctx = seccomp_init(SCMP_ACT_KILL_PROCESS);
+		// ctx = seccomp_init(SCMP_ACT_KILL_PROCESS);
 		if (ctx) {
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(accept4), 0);
@@ -345,7 +347,8 @@ int main(int argc, char **argv)
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(bind), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(brk), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_gettime), 0);
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 0); /* glibc resolv */
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone),
+			                       0); /* glibc resolv */
 #ifdef __SNR_clone3
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
 #endif
@@ -390,6 +393,7 @@ int main(int argc, char **argv)
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat), 0);
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat2), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pidfd_open), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pipe), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(pipe2), 0);
@@ -403,9 +407,11 @@ int main(int argc, char **argv)
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(recvfrom), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(recvmsg), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rename), 0);
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(renameat), 0);
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(renameat2), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(restart_syscall), 0);
 #ifdef __SNR_rseq
-                        rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
 #endif
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0);
@@ -422,7 +428,8 @@ int main(int argc, char **argv)
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(statfs), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sysinfo), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(umask), 0);
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(uname), 0); /* glic resolv */
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(uname),
+			                       0); /* glic resolv */
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(unlink), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(wait4), 0);
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(waitid), 0);
@@ -431,19 +438,27 @@ int main(int argc, char **argv)
 #ifdef __SNR_epoll_pwait2
 			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(epoll_pwait2), 0);
 #endif
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(kill), 1, SCMP_A1(SCMP_CMP_EQ, SIGTSTP));
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, TIOCGWINSZ));
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, TCGETS));
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, TCSETSW));
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, TCSETSF));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(kill), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, SIGTSTP));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, TIOCGWINSZ));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, TCGETS));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, TCSETSW));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, TCSETSF));
 #ifdef FIONREAD
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, FIONREAD));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, FIONREAD));
 #endif
 #ifdef FIONWRITE
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, FIONWRITE));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, FIONWRITE));
 #endif
 #ifdef FIONSPACE
-			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1, SCMP_A1(SCMP_CMP_EQ, FIONSPACE));
+			rc |= seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(ioctl), 1,
+			                       SCMP_A1(SCMP_CMP_EQ, FIONSPACE));
 #endif
 
 			fprintf(stderr, "rc=%d Adding seccomp rules... ", rc);
@@ -473,8 +488,7 @@ int main(int argc, char **argv)
 
 			if (settings_get_bool("quit_on_hup")) {
 				signal_emit("gui exit", 0);
-			}
-			else {
+			} else {
 				signal_emit("command reload", 1, "");
 			}
 		}

@@ -25,11 +25,10 @@
 typedef struct {
 	int condition;
 	GInputFunction function;
-        void *data;
+	void *data;
 } IRSSI_INPUT_REC;
 
-static int irssi_io_invoke(GIOChannel *source, GIOCondition condition,
-			   void *data)
+static int irssi_io_invoke(GIOChannel *source, GIOCondition condition, void *data)
 {
 	IRSSI_INPUT_REC *rec = data;
 	int icond = 0;
@@ -56,7 +55,7 @@ static int irssi_io_invoke(GIOChannel *source, GIOCondition condition,
 int i_input_add_full(GIOChannel *source, int priority, int condition, GInputFunction function,
                      void *data)
 {
-        IRSSI_INPUT_REC *rec;
+	IRSSI_INPUT_REC *rec;
 	unsigned int result;
 	GIOCondition cond;
 
@@ -65,14 +64,13 @@ int i_input_add_full(GIOChannel *source, int priority, int condition, GInputFunc
 	rec->function = function;
 	rec->data = data;
 
-	cond = (GIOCondition) (G_IO_ERR|G_IO_HUP|G_IO_NVAL);
+	cond = (GIOCondition) (G_IO_ERR | G_IO_HUP | G_IO_NVAL);
 	if (condition & I_INPUT_READ)
-		cond |= G_IO_IN|G_IO_PRI;
+		cond |= G_IO_IN | G_IO_PRI;
 	if (condition & I_INPUT_WRITE)
 		cond |= G_IO_OUT;
 
-	result = g_io_add_watch_full(source, priority, cond,
-				     irssi_io_invoke, rec, g_free);
+	result = g_io_add_watch_full(source, priority, cond, irssi_io_invoke, rec, g_free);
 
 	return result;
 }
@@ -100,8 +98,7 @@ int g_timeval_cmp(const GTimeVal *tv1, const GTimeVal *tv2)
 	if (tv1->tv_sec > tv2->tv_sec)
 		return 1;
 
-	return tv1->tv_usec < tv2->tv_usec ? -1 :
-		tv1->tv_usec > tv2->tv_usec ? 1 : 0;
+	return tv1->tv_usec < tv2->tv_usec ? -1 : tv1->tv_usec > tv2->tv_usec ? 1 : 0;
 }
 
 long get_timeval_diff(const GTimeVal *tv1, const GTimeVal *tv2)
@@ -114,7 +111,7 @@ long get_timeval_diff(const GTimeVal *tv1, const GTimeVal *tv2)
 		usecs += 1000000;
 		secs--;
 	}
-	usecs = usecs/1000 + secs * 1000;
+	usecs = usecs / 1000 + secs * 1000;
 
 	return usecs;
 }
@@ -155,14 +152,16 @@ int find_substr(const char *list, const char *item)
 		return FALSE;
 
 	for (;;) {
-		while (i_isspace(*list)) list++;
-		if (*list == '\0') break;
+		while (i_isspace(*list))
+			list++;
+		if (*list == '\0')
+			break;
 
 		ptr = strchr(list, ' ');
-		if (ptr == NULL) ptr = list+strlen(list);
+		if (ptr == NULL)
+			ptr = list + strlen(list);
 
-		if (g_ascii_strncasecmp(list, item, ptr-list) == 0 &&
-		    item[ptr-list] == '\0')
+		if (g_ascii_strncasecmp(list, item, ptr - list) == 0 && item[ptr - list] == '\0')
 			return TRUE;
 
 		list = ptr;
@@ -191,7 +190,8 @@ int strarray_find(char **array, const char *item)
 GSList *i_slist_find_string(GSList *list, const char *key)
 {
 	for (; list != NULL; list = list->next)
-		if (g_strcmp0(list->data, key) == 0) return list;
+		if (g_strcmp0(list->data, key) == 0)
+			return list;
 
 	return NULL;
 }
@@ -199,7 +199,8 @@ GSList *i_slist_find_string(GSList *list, const char *key)
 GSList *i_slist_find_icase_string(GSList *list, const char *key)
 {
 	for (; list != NULL; list = list->next)
-		if (g_ascii_strcasecmp(list->data, key) == 0) return list;
+		if (g_ascii_strcasecmp(list->data, key) == 0)
+			return list;
 
 	return NULL;
 }
@@ -210,7 +211,8 @@ void *i_slist_foreach_find(GSList *list, FOREACH_FIND_FUNC func, const void *dat
 
 	while (list != NULL) {
 		ret = func(list->data, (void *) data);
-                if (ret != NULL) return ret;
+		if (ret != NULL)
+			return ret;
 
 		list = list->next;
 	}
@@ -265,7 +267,8 @@ char *gslistptr_to_string(GSList *list, int offset, const char *delimiter)
 	while (list != NULL) {
 		data = G_STRUCT_MEMBER_P(list->data, offset);
 
-		if (str->len != 0) g_string_append(str, delimiter);
+		if (str->len != 0)
+			g_string_append(str, delimiter);
 		g_string_append(str, *data);
 		list = list->next;
 	}
@@ -282,7 +285,8 @@ char *i_slist_to_string(GSList *list, const char *delimiter)
 
 	str = g_string_new(NULL);
 	while (list != NULL) {
-		if (str->len != 0) g_string_append(str, delimiter);
+		if (str->len != 0)
+			g_string_append(str, delimiter);
 		g_string_append(str, list->data);
 
 		list = list->next;
@@ -315,7 +319,8 @@ GList *optlist_remove_known(const char *cmd, GHashTable *optlist)
 GList *i_list_find_string(GList *list, const char *key)
 {
 	for (; list != NULL; list = list->next)
-		if (g_strcmp0(list->data, key) == 0) return list;
+		if (g_strcmp0(list->data, key) == 0)
+			return list;
 
 	return NULL;
 }
@@ -323,7 +328,8 @@ GList *i_list_find_string(GList *list, const char *key)
 GList *i_list_find_icase_string(GList *list, const char *key)
 {
 	for (; list != NULL; list = list->next)
-		if (g_ascii_strcasecmp(list->data, key) == 0) return list;
+		if (g_ascii_strcasecmp(list->data, key) == 0)
+			return list;
 
 	return NULL;
 }
@@ -341,26 +347,24 @@ char *stristr(const char *data, const char *key)
 	if (keylen == 0)
 		return (char *) data;
 
-	max = data+datalen-keylen;
+	max = data + datalen - keylen;
 	pos = 0;
 	while (data <= max) {
 		if (key[pos] == '\0')
-                        return (char *) data;
+			return (char *) data;
 
 		if (i_toupper(data[pos]) == i_toupper(key[pos]))
 			pos++;
 		else {
 			data++;
-                        pos = 0;
+			pos = 0;
 		}
 	}
 
 	return NULL;
 }
 
-#define isbound(c) \
-	((unsigned char) (c) < 128 && \
-	(i_isspace(c) || i_ispunct(c)))
+#define isbound(c) ((unsigned char) (c) < 128 && (i_isspace(c) || i_ispunct(c)))
 
 static char *strstr_full_case(const char *data, const char *key, int icase)
 {
@@ -375,26 +379,27 @@ static char *strstr_full_case(const char *data, const char *key, int icase)
 	if (keylen == 0)
 		return (char *) data;
 
-	max = data+datalen-keylen;
-	start = data; pos = 0;
+	max = data + datalen - keylen;
+	start = data;
+	pos = 0;
 	while (data <= max) {
 		if (key[pos] == '\0') {
 			if (data[pos] != '\0' && !isbound(data[pos])) {
 				data++;
 				pos = 0;
-                                continue;
+				continue;
 			}
 			return (char *) data;
 		}
 
-		match = icase ? (i_toupper(data[pos]) == i_toupper(key[pos])) :
-				 data[pos] == key[pos];
+		match =
+		    icase ? (i_toupper(data[pos]) == i_toupper(key[pos])) : data[pos] == key[pos];
 
 		if (match && (pos != 0 || data == start || isbound(data[-1])))
 			pos++;
 		else {
 			data++;
-                        pos = 0;
+			pos = 0;
 		}
 	}
 
@@ -403,12 +408,12 @@ static char *strstr_full_case(const char *data, const char *key, int icase)
 
 char *strstr_full(const char *data, const char *key)
 {
-        return strstr_full_case(data, key, FALSE);
+	return strstr_full_case(data, key, FALSE);
 }
 
 char *stristr_full(const char *data, const char *key)
 {
-        return strstr_full_case(data, key, TRUE);
+	return strstr_full_case(data, key, TRUE);
 }
 
 /* convert ~/ to $HOME */
@@ -416,12 +421,12 @@ char *convert_home(const char *path)
 {
 	const char *home;
 
-	if (*path == '~' && (*(path+1) == '/' || *(path+1) == '\0')) {
+	if (*path == '~' && (*(path + 1) == '/' || *(path + 1) == '\0')) {
 		home = g_get_home_dir();
 		if (home == NULL)
 			home = ".";
 
-		return g_strconcat(home, path+1, NULL);
+		return g_strconcat(home, path + 1, NULL);
 	} else {
 		return g_strdup(path);
 	}
@@ -464,7 +469,8 @@ int match_wildcards(const char *cmask, const char *data)
 			continue;
 		}
 
-		while (*mask == '?' || *mask == '*') mask++;
+		while (*mask == '?' || *mask == '*')
+			mask++;
 		if (*mask == '\0') {
 			data += strlen(data);
 			break;
@@ -472,20 +478,25 @@ int match_wildcards(const char *cmask, const char *data)
 
 		p1 = strchr(mask, '*');
 		p2 = strchr(mask, '?');
-		if (p1 == NULL || (p2 < p1 && p2 != NULL)) p1 = p2;
+		if (p1 == NULL || (p2 < p1 && p2 != NULL))
+			p1 = p2;
 
-		if (p1 != NULL) *p1 = '\0';
+		if (p1 != NULL)
+			*p1 = '\0';
 
 		data = stristr(data, mask);
-		if (data == NULL) break;
+		if (data == NULL)
+			break;
 
 		data += strlen(mask);
-		mask += strlen(mask)-1;
+		mask += strlen(mask) - 1;
 
-		if (p1 != NULL) *p1 = p1 == p2 ? '?' : '*';
+		if (p1 != NULL)
+			*p1 = p1 == p2 ? '?' : '*';
 	}
 
-	while (*mask == '*') mask++;
+	while (*mask == '*')
+		mask++;
 
 	ret = data != NULL && *data == '\0' && *mask == '\0';
 	g_free(newmask);
@@ -503,7 +514,8 @@ int is_numeric(const char *str, char end_char)
 		return FALSE;
 
 	while (*str != '\0' && *str != end_char) {
-		if (!i_isdigit(*str)) return FALSE;
+		if (!i_isdigit(*str))
+			return FALSE;
 		str++;
 	}
 
@@ -516,7 +528,8 @@ char *replace_chars(char *str, char from, char to)
 	char *p;
 
 	for (p = str; *p != '\0'; p++) {
-		if (*p == from) *p = to;
+		if (*p == from)
+			*p = to;
 	}
 	return str;
 }
@@ -525,10 +538,12 @@ int octal2dec(int octal)
 {
 	int dec, n;
 
-	dec = 0; n = 1;
+	dec = 0;
+	n = 1;
 	while (octal != 0) {
-		dec += n*(octal%10);
-		octal /= 10; n *= 8;
+		dec += n * (octal % 10);
+		octal /= 10;
+		n *= 8;
 	}
 
 	return dec;
@@ -538,9 +553,10 @@ int dec2octal(int decimal)
 {
 	int octal, pos;
 
-	octal = 0; pos = 0;
+	octal = 0;
+	pos = 0;
 	while (decimal > 0) {
-		octal += (decimal & 7)*(pos == 0 ? 1 : pos);
+		octal += (decimal & 7) * (pos == 0 ? 1 : pos);
 		decimal /= 8;
 		pos += 10;
 	}
@@ -552,9 +568,9 @@ int dec2octal(int decimal)
 uoff_t str_to_uofft(const char *str)
 {
 #ifdef UOFF_T_LONG_LONG
-	return (uoff_t)strtoull(str, NULL, 10);
+	return (uoff_t) strtoull(str, NULL, 10);
 #else
-	return (uoff_t)strtoul(str, NULL, 10);
+	return (uoff_t) strtoul(str, NULL, 10);
 #endif
 }
 
@@ -563,13 +579,13 @@ char *show_lowascii(const char *str)
 {
 	char *ret, *p;
 
-	ret = p = g_malloc(strlen(str)*2+1);
+	ret = p = g_malloc(strlen(str) * 2 + 1);
 	while (*str != '\0') {
 		if ((unsigned char) *str >= 32)
 			*p++ = *str;
 		else {
 			*p++ = '^';
-			*p++ = *str + 'A'-1;
+			*p++ = *str + 'A' - 1;
 		}
 		str++;
 	}
@@ -583,27 +599,26 @@ char *my_asctime(time_t t)
 {
 	struct tm *tm;
 	char *str;
-        int len;
+	int len;
 
 	tm = localtime(&t);
 	if (tm == NULL)
-	    return g_strdup("???");
+		return g_strdup("???");
 
 	str = g_strdup(asctime(tm));
 
 	len = strlen(str);
-	if (len > 0) str[len-1] = '\0';
-        return str;
+	if (len > 0)
+		str[len - 1] = '\0';
+	return str;
 }
 
 /* Returns number of columns needed to print items.
    save_column_widths is filled with length of each column. */
-int get_max_column_count(GSList *items, COLUMN_LEN_FUNC len_func,
-			 int max_width, int max_columns,
-			 int item_extra, int item_min_size,
-			 int **save_column_widths, int *rows)
+int get_max_column_count(GSList *items, COLUMN_LEN_FUNC len_func, int max_width, int max_columns,
+                         int item_extra, int item_min_size, int **save_column_widths, int *rows)
 {
-        GSList *tmp;
+	GSList *tmp;
 	int **columns, *columns_width, *columns_rows;
 	int item_pos, items_count;
 	int ret, len, max_len, n, col;
@@ -611,30 +626,31 @@ int get_max_column_count(GSList *items, COLUMN_LEN_FUNC len_func,
 	items_count = g_slist_length(items);
 	if (items_count == 0) {
 		*save_column_widths = NULL;
-                *rows = 0;
+		*rows = 0;
 		return 0;
 	}
 
-	len = max_width/(item_extra+item_min_size);
-        if (len <= 0) len = 1;
+	len = max_width / (item_extra + item_min_size);
+	if (len <= 0)
+		len = 1;
 	if (max_columns <= 0 || len < max_columns)
-                max_columns = len;
+		max_columns = len;
 
 	columns = g_new0(int *, max_columns);
 	columns_width = g_new0(int, max_columns);
 	columns_rows = g_new0(int, max_columns);
 
 	for (n = 1; n < max_columns; n++) {
-		columns[n] = g_new0(int, n+1);
-		columns_rows[n] = items_count <= n+1 ? 1 :
-                        (items_count+n)/(n+1);
+		columns[n] = g_new0(int, n + 1);
+		columns_rows[n] = items_count <= n + 1 ? 1 : (items_count + n) / (n + 1);
 	}
 
 	/* for each possible column count, save the column widths and
 	   find the biggest column count that fits to screen. */
-        item_pos = 0; max_len = 0;
+	item_pos = 0;
+	max_len = 0;
 	for (tmp = items; tmp != NULL; tmp = tmp->next) {
-		len = item_extra+len_func(tmp->data);
+		len = item_extra + len_func(tmp->data);
 		if (max_len < len)
 			max_len = len;
 
@@ -642,73 +658,71 @@ int get_max_column_count(GSList *items, COLUMN_LEN_FUNC len_func,
 			if (columns_width[n] > max_width)
 				continue; /* too wide */
 
-			col = item_pos/columns_rows[n];
+			col = item_pos / columns_rows[n];
 			if (columns[n][col] < len) {
-				columns_width[n] += len-columns[n][col];
-                                columns[n][col] = len;
+				columns_width[n] += len - columns[n][col];
+				columns[n][col] = len;
 			}
 		}
 
-                item_pos++;
+		item_pos++;
 	}
 
-	for (n = max_columns-1; n >= 1; n--) {
-		if (columns_width[n] <= max_width &&
-		    columns[n][n] > 0)
-                        break;
+	for (n = max_columns - 1; n >= 1; n--) {
+		if (columns_width[n] <= max_width && columns[n][n] > 0)
+			break;
 	}
-        ret = n+1;
+	ret = n + 1;
 
 	*save_column_widths = g_new(int, ret);
 	if (ret == 1) {
-                **save_column_widths = max_len;
-                *rows = 1;
+		**save_column_widths = max_len;
+		*rows = 1;
 	} else {
-		memcpy(*save_column_widths, columns[ret-1], sizeof(int)*ret);
-		*rows = columns_rows[ret-1];
+		memcpy(*save_column_widths, columns[ret - 1], sizeof(int) * ret);
+		*rows = columns_rows[ret - 1];
 	}
 
 	for (n = 1; n < max_columns; n++)
-                g_free(columns[n]);
+		g_free(columns[n]);
 	g_free(columns_width);
 	g_free(columns_rows);
 	g_free(columns);
 
-        return ret;
+	return ret;
 }
 
 /* Return a column sorted copy of a list. */
 GSList *columns_sort_list(GSList *list, int rows)
 {
-        GSList *tmp, *sorted;
+	GSList *tmp, *sorted;
 	int row, skip;
 
 	if (list == NULL || rows == 0)
-                return list;
+		return list;
 
 	sorted = NULL;
 
 	for (row = 0; row < rows; row++) {
-                tmp = g_slist_nth(list, row);
-                skip = 1;
+		tmp = g_slist_nth(list, row);
+		skip = 1;
 		for (; tmp != NULL; tmp = tmp->next) {
 			if (--skip == 0) {
-                                skip = rows;
+				skip = rows;
 				sorted = g_slist_append(sorted, tmp->data);
 			}
 		}
 	}
 
-	g_return_val_if_fail(g_slist_length(sorted) ==
-			     g_slist_length(list), sorted);
-        return sorted;
+	g_return_val_if_fail(g_slist_length(sorted) == g_slist_length(list), sorted);
+	return sorted;
 }
 
 /* Expand escape string, the first character in data should be the
    one after '\'. Returns the expanded character or -1 if error. */
 int expand_escape(const char **data)
 {
-        char digit[4];
+	char digit[4];
 
 	switch (**data) {
 	case 't':
@@ -723,13 +737,13 @@ int expand_escape(const char **data)
 		return '\\';
 
 	case 'x':
-                /* hex digit */
+		/* hex digit */
 		if (!i_isxdigit((*data)[1]) || !i_isxdigit((*data)[2]))
 			return -1;
 
 		digit[0] = (*data)[1];
 		digit[1] = (*data)[2];
-                digit[2] = '\0';
+		digit[2] = '\0';
 		*data += 2;
 		return strtol(digit, NULL, 16);
 	case 'c':
@@ -739,11 +753,17 @@ int expand_escape(const char **data)
 		/* control character (\cA = ^A) */
 		(*data)++;
 		return i_toupper(**data) - 64;
-	case '0': case '1': case '2': case '3':
-	case '4': case '5': case '6': case '7':
-                /* octal */
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+		/* octal */
 		digit[1] = digit[2] = digit[3] = '\0';
-                digit[0] = (*data)[0];
+		digit[0] = (*data)[0];
 		if ((*data)[1] >= '0' && (*data)[1] <= '7') {
 			++*data;
 			digit[1] = **data;
@@ -763,7 +783,7 @@ char *escape_string(const char *str)
 {
 	char *ret, *p;
 
-	p = ret = g_malloc(strlen(str)*2+1);
+	p = ret = g_malloc(strlen(str) * 2 + 1);
 	while (*str != '\0') {
 		if (*str == '"' || *str == '\'' || *str == '\\')
 			*p++ = '\\';
@@ -779,7 +799,7 @@ char *escape_string_backslashes(const char *str)
 {
 	char *ret, *p;
 
-	p = ret = g_malloc(strlen(str)*2+1);
+	p = ret = g_malloc(strlen(str) * 2 + 1);
 	while (*str != '\0') {
 		if (*str == '\\')
 			*p++ = '\\';
@@ -794,7 +814,8 @@ int nearest_power(int num)
 {
 	int n = 1;
 
-	while (n < num) n <<= 1;
+	while (n < num)
+		n <<= 1;
 	return n;
 }
 
@@ -855,7 +876,9 @@ static int parse_time_interval_uint(const char *time, guint *msecs)
 	*msecs = 0;
 
 	/* max. return value is around 24 days */
-	number = 0; ret = TRUE; digits = FALSE;
+	number = 0;
+	ret = TRUE;
+	digits = FALSE;
 	while (i_isspace(*time))
 		time++;
 	for (;;) {
@@ -895,19 +918,19 @@ static int parse_time_interval_uint(const char *time, guint *msecs)
 				/* would overflow */
 				return FALSE;
 			}
-			*msecs += number * 1000*3600*24;
+			*msecs += number * 1000 * 3600 * 24;
 		} else if (g_ascii_strncasecmp(desc, "hours", len) == 0)
-			*msecs += number * 1000*3600;
+			*msecs += number * 1000 * 3600;
 		else if (g_ascii_strncasecmp(desc, "minutes", len) == 0 ||
-			 g_ascii_strncasecmp(desc, "mins", len) == 0)
-			*msecs += number * 1000*60;
+		         g_ascii_strncasecmp(desc, "mins", len) == 0)
+			*msecs += number * 1000 * 60;
 		else if (g_ascii_strncasecmp(desc, "seconds", len) == 0 ||
-			 g_ascii_strncasecmp(desc, "secs", len) == 0)
+		         g_ascii_strncasecmp(desc, "secs", len) == 0)
 			*msecs += number * 1000;
 		else if (g_ascii_strncasecmp(desc, "milliseconds", len) == 0 ||
-			 g_ascii_strncasecmp(desc, "millisecs", len) == 0 ||
-			 g_ascii_strncasecmp(desc, "mseconds", len) == 0 ||
-			 g_ascii_strncasecmp(desc, "msecs", len) == 0)
+		         g_ascii_strncasecmp(desc, "millisecs", len) == 0 ||
+		         g_ascii_strncasecmp(desc, "mseconds", len) == 0 ||
+		         g_ascii_strncasecmp(desc, "msecs", len) == 0)
 			*msecs += number;
 		else {
 			ret = FALSE;
@@ -961,7 +984,7 @@ static int parse_size_uint(const char *size, guint *bytes)
 				return TRUE;
 			}
 
-			*bytes += number*1024; /* assume kilobytes */
+			*bytes += number * 1024; /* assume kilobytes */
 			return FALSE;
 		}
 
@@ -1032,13 +1055,12 @@ int parse_time_interval(const char *time, int *msecs)
 	return ret;
 }
 
-
 char *ascii_strup(char *str)
 {
 	char *s;
 
 	for (s = str; *s; s++)
-		*s = g_ascii_toupper (*s);
+		*s = g_ascii_toupper(*s);
 	return str;
 }
 
@@ -1047,7 +1069,7 @@ char *ascii_strdown(char *str)
 	char *s;
 
 	for (s = str; *s; s++)
-		*s = g_ascii_tolower (*s);
+		*s = g_ascii_tolower(*s);
 	return str;
 }
 

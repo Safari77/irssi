@@ -1,8 +1,14 @@
 #ifndef IRSSI_IRC_DCC_DCC_H
 #define IRSSI_IRC_DCC_DCC_H
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <linux/openat2.h>
+
 #include <irssi/src/core/modules.h>
 #include <irssi/src/core/network.h>
+#include <irssi/src/irc/core/irc.h>
 
 #define DCC(dcc) ((DCC_REC *) (dcc))
 
@@ -13,20 +19,16 @@ typedef struct {
 } DCC_REC;
 
 /* fully connected? */
-#define dcc_is_connected(dcc) \
-        ((dcc)->starttime != 0)
+#define dcc_is_connected(dcc) ((dcc)->starttime != 0)
 
 /* not connected, we're waiting for other side to connect */
-#define dcc_is_listening(dcc) \
-        ((dcc)->handle != NULL && (dcc)->starttime == 0)
+#define dcc_is_listening(dcc) ((dcc)->handle != NULL && (dcc)->starttime == 0)
 
 /* not connected, waiting for user to accept it */
-#define dcc_is_waiting_user(dcc) \
-        ((dcc)->handle == NULL)
+#define dcc_is_waiting_user(dcc) ((dcc)->handle == NULL)
 
 /* passive DCC */
-#define dcc_is_passive(dcc) \
-	((dcc)->pasv_id >= 0)
+#define dcc_is_passive(dcc) ((dcc)->pasv_id >= 0)
 
 extern GSList *dcc_conns;
 
@@ -37,8 +39,8 @@ int dcc_str2type(const char *str);
 #define dcc_type2str(type) (module_find_id_str("DCC", type))
 
 /* Initialize DCC record */
-void dcc_init_rec(DCC_REC *dcc, IRC_SERVER_REC *server, CHAT_DCC_REC *chat,
-		  const char *nick, const char *arg);
+void dcc_init_rec(DCC_REC *dcc, IRC_SERVER_REC *server, CHAT_DCC_REC *chat, const char *nick,
+                  const char *arg);
 void dcc_destroy(DCC_REC *dcc);
 
 /* Find waiting DCC requests (non-connected) */
@@ -63,5 +65,13 @@ void dcc_reject(DCC_REC *dcc, IRC_SERVER_REC *server);
 
 void dcc_init(void);
 void dcc_deinit(void);
+
+extern int dcc_download_dirfd;
+extern int dcc_upload_dirfd;
+void dcc_download_dirfd_open(void);
+void dcc_upload_dirfd_open(void);
+
+int sys_openat2(int dirfd, const char *pathname, const struct open_how *how);
+int dcc_openat2(int dirfd, const char *base, int flags, mode_t mode);
 
 #endif

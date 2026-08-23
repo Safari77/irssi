@@ -19,6 +19,7 @@
 */
 
 #include "module.h"
+
 #include <irssi/src/core/signals.h>
 #include <irssi/src/core/commands.h>
 #include <irssi/src/core/network.h>
@@ -36,8 +37,7 @@ static FILE_DCC_REC *dcc_resume_find(int type, const char *nick, int port)
 	for (tmp = dcc_conns; tmp != NULL; tmp = tmp->next) {
 		FILE_DCC_REC *dcc = tmp->data;
 
-		if (dcc->type == type && !dcc_is_connected(dcc) &&
-		    dcc->port == port &&
+		if (dcc->type == type && !dcc_is_connected(dcc) && dcc->port == port &&
 		    g_ascii_strcasecmp(dcc->nick, nick) == 0)
 			return dcc;
 	}
@@ -45,9 +45,9 @@ static FILE_DCC_REC *dcc_resume_find(int type, const char *nick, int port)
 	return NULL;
 }
 
-#define get_params_match_resume(params, pos) \
-	(is_numeric(params[pos], '\0') && atol(params[pos]) < 65536 && \
-	is_numeric(params[(pos)+1], '\0'))
+#define get_params_match_resume(params, pos)                                                       \
+	(is_numeric(params[pos], '\0') && atol(params[pos]) < 65536 &&                             \
+	 is_numeric(params[(pos) + 1], '\0'))
 
 /* Based on get_file_params_count() found in dcc-get.c. The main difference
    is represented by the number of params expected after the filename (2 at
@@ -61,17 +61,17 @@ int get_file_params_count_resume(char **params, int paramcount)
 
 	if (*params[0] == '"') {
 		/* quoted file name? */
-		for (pos = 0; pos < paramcount-2; pos++) {
+		for (pos = 0; pos < paramcount - 2; pos++) {
 			if (strlen(params[pos]) == 0)
 				continue;
-			if (params[pos][strlen(params[pos])-1] == '"' &&
-			    get_params_match_resume(params, pos+1))
-				return pos+1;
+			if (params[pos][strlen(params[pos]) - 1] == '"' &&
+			    get_params_match_resume(params, pos + 1))
+				return pos + 1;
 		}
 	}
 
-	best = paramcount-2;
-	for (pos = paramcount-2; pos > 0; pos--) {
+	best = paramcount - 2;
+	for (pos = paramcount - 2; pos > 0; pos--) {
 		if (get_params_match_resume(params, pos))
 			best = pos;
 	}
@@ -79,9 +79,8 @@ int get_file_params_count_resume(char **params, int paramcount)
 	return best;
 }
 
-
-static int dcc_ctcp_resume_parse(int type, const char *data, const char *nick,
-				 FILE_DCC_REC **dcc, uoff_t *size, int *pasv_id)
+static int dcc_ctcp_resume_parse(int type, const char *data, const char *nick, FILE_DCC_REC **dcc,
+                                 uoff_t *size, int *pasv_id)
 {
 	char **params;
 	int paramcount, fileparams;
@@ -101,8 +100,10 @@ static int dcc_ctcp_resume_parse(int type, const char *data, const char *nick,
 
 	if (paramcount >= fileparams + 2) {
 		port = atoi(params[fileparams]);
-		*size = str_to_uofft(params[fileparams+1]);
-		*pasv_id = ((port == 0) && (paramcount == fileparams + 3)) ? atoi(params[fileparams+2]) : -1;
+		*size = str_to_uofft(params[fileparams + 1]);
+		*pasv_id = ((port == 0) && (paramcount == fileparams + 3)) ?
+		               atoi(params[fileparams + 2]) :
+		               -1;
 		*dcc = dcc_resume_find(type, nick, port);
 		g_strfreev(params);
 
@@ -113,68 +114,62 @@ static int dcc_ctcp_resume_parse(int type, const char *data, const char *nick,
 	return FALSE;
 }
 
-static int dcc_resume_file_check(FILE_DCC_REC *dcc, IRC_SERVER_REC *server,
-				 uoff_t size)
+static int dcc_resume_file_check(FILE_DCC_REC *dcc, IRC_SERVER_REC *server, uoff_t size)
 {
 	if (size >= dcc->size) {
 		/* whole file sent */
 		dcc->starttime = time(NULL);
 		dcc_reject(DCC(dcc), server);
-	} else if (lseek(dcc->fhandle, (off_t)size, SEEK_SET) != (off_t)size) {
+	} else if (lseek(dcc->fhandle, (off_t) size, SEEK_SET) != (off_t) size) {
 		/* error */
 		dcc_reject(DCC(dcc), server);
 	} else {
 		dcc->transfd = dcc->skipped = size;
-                return TRUE;
+		return TRUE;
 	}
 
 	return FALSE;
 }
 
 /* CTCP: DCC RESUME - requesting to resume DCC SEND */
-static void ctcp_msg_dcc_resume(IRC_SERVER_REC *server, const char *data,
-				const char *nick, const char *addr,
-				const char *target, DCC_REC *chat)
+static void ctcp_msg_dcc_resume(IRC_SERVER_REC *server, const char *data, const char *nick,
+                                const char *addr, const char *target, DCC_REC *chat)
 {
 	FILE_DCC_REC *dcc;
-        char *str;
+	char *str;
 	uoff_t size;
 	int pasv_id = -1;
 
 	if (!dcc_ctcp_resume_parse(DCC_SEND_TYPE, data, nick, &dcc, &size, &pasv_id)) {
-		signal_emit("dcc error ctcp", 5, "RESUME", data,
-			    nick, addr, target);
+		signal_emit("dcc error ctcp", 5, "RESUME", data, nick, addr, target);
 	} else if (dcc != NULL && dcc_resume_file_check(dcc, server, size)) {
 		if (!dcc_is_passive(dcc)) {
 			str = g_strdup_printf(DCC_SEND(dcc)->file_quoted ?
-					      "DCC ACCEPT \"%s\" %d %"PRIuUOFF_T :
-					      "DCC ACCEPT %s %d %"PRIuUOFF_T,
-					      dcc->arg, dcc->port, dcc->transfd);
+			                          "DCC ACCEPT \"%s\" %d %" PRIuUOFF_T :
+			                          "DCC ACCEPT %s %d %" PRIuUOFF_T,
+			                      dcc->arg, dcc->port, dcc->transfd);
 		} else {
 			str = g_strdup_printf(DCC_SEND(dcc)->file_quoted ?
-					      "DCC ACCEPT \"%s\" 0 %"PRIuUOFF_T" %d" :
-					      "DCC ACCEPT %s 0 %"PRIuUOFF_T" %d",
-					      dcc->arg, dcc->transfd, dcc->pasv_id);
+			                          "DCC ACCEPT \"%s\" 0 %" PRIuUOFF_T " %d" :
+			                          "DCC ACCEPT %s 0 %" PRIuUOFF_T " %d",
+			                      dcc->arg, dcc->transfd, dcc->pasv_id);
 		}
-		dcc_ctcp_message(dcc->server, dcc->nick,
-				 dcc->chat, FALSE, str);
+		dcc_ctcp_message(dcc->server, dcc->nick, dcc->chat, FALSE, str);
 		g_free(str);
 	}
 }
 
 /* CTCP: DCC ACCEPT - accept resuming DCC GET */
-static void ctcp_msg_dcc_accept(IRC_SERVER_REC *server, const char *data,
-				const char *nick, const char *addr,
-				const char *target, DCC_REC *chat)
+static void ctcp_msg_dcc_accept(IRC_SERVER_REC *server, const char *data, const char *nick,
+                                const char *addr, const char *target, DCC_REC *chat)
 {
 	FILE_DCC_REC *dcc;
-        uoff_t size;
+	uoff_t size;
 	int pasv_id;
 
 	if (!dcc_ctcp_resume_parse(DCC_GET_TYPE, data, nick, &dcc, &size, &pasv_id) ||
 	    (dcc != NULL && DCC_GET(dcc)->get_type != DCC_GET_RESUME)) {
-		signal_emit("dcc error ctcp", 5, "ACCEPT", data,
-			    nick, addr, target);
+		signal_emit("dcc error ctcp", 5, "ACCEPT", data, nick, addr, target);
 	} else if (dcc != NULL && dcc_resume_file_check(dcc, server, size)) {
 		if (!dcc_is_passive(dcc))
 			dcc_get_connect(DCC_GET(dcc));
@@ -186,23 +181,35 @@ static void ctcp_msg_dcc_accept(IRC_SERVER_REC *server, const char *data,
 /* Resume a DCC GET */
 static void dcc_send_resume(GET_DCC_REC *dcc)
 {
-        off_t pos;
+	off_t pos;
 	char *str;
+	char *base;
 
-        g_return_if_fail(dcc != NULL);
+	g_return_if_fail(dcc != NULL);
+
+	if (dcc_download_dirfd == -1)
+		dcc_download_dirfd_open();
 
 	dcc->file = dcc_get_download_path(dcc->arg);
-	dcc->fhandle = open(dcc->file, O_WRONLY | O_NOFOLLOW | O_CLOEXEC);
-	if (dcc->fhandle == -1) {
+
+	if (dcc_download_dirfd == -1) {
 		signal_emit("dcc error file open", 3, dcc->nick, dcc->file,
-			    GINT_TO_POINTER(errno));
+		            GINT_TO_POINTER(ENOENT));
+		return;
+	}
+
+	base = g_path_get_basename(dcc->file);
+	dcc->fhandle = dcc_openat2(dcc_download_dirfd, base, O_WRONLY, 0);
+	g_free(base);
+	if (dcc->fhandle == -1) {
+		signal_emit("dcc error file open", 3, dcc->nick, dcc->file, GINT_TO_POINTER(errno));
 		return;
 	}
 
 	dcc->get_type = DCC_GET_RESUME;
 
 	pos = lseek(dcc->fhandle, 0, SEEK_END);
-	dcc->transfd = pos < 0 ? 0 : (uoff_t)pos;
+	dcc->transfd = pos < 0 ? 0 : (uoff_t) pos;
 	dcc->skipped = dcc->transfd;
 
 	if (dcc->skipped == dcc->size) {
@@ -211,18 +218,17 @@ static void dcc_send_resume(GET_DCC_REC *dcc)
 		dcc_reject(DCC(dcc), NULL);
 	} else {
 		if (!dcc_is_passive(dcc)) {
-			str = g_strdup_printf(dcc->file_quoted ?
-					      "DCC RESUME \"%s\" %d %"PRIuUOFF_T :
-					      "DCC RESUME %s %d %"PRIuUOFF_T,
-					      dcc->arg, dcc->port, dcc->transfd);
+			str =
+			    g_strdup_printf(dcc->file_quoted ? "DCC RESUME \"%s\" %d %" PRIuUOFF_T :
+			                                       "DCC RESUME %s %d %" PRIuUOFF_T,
+			                    dcc->arg, dcc->port, dcc->transfd);
 		} else {
 			str = g_strdup_printf(dcc->file_quoted ?
-					      "DCC RESUME \"%s\" 0 %"PRIuUOFF_T" %d" :
-					      "DCC RESUME %s 0 %"PRIuUOFF_T" %d",
-					      dcc->arg, dcc->transfd, dcc->pasv_id);
+			                          "DCC RESUME \"%s\" 0 %" PRIuUOFF_T " %d" :
+			                          "DCC RESUME %s 0 %" PRIuUOFF_T " %d",
+			                      dcc->arg, dcc->transfd, dcc->pasv_id);
 		}
-		dcc_ctcp_message(dcc->server, dcc->nick,
-				 dcc->chat, FALSE, str);
+		dcc_ctcp_message(dcc->server, dcc->nick, dcc->chat, FALSE, str);
 		g_free(str);
 	}
 }

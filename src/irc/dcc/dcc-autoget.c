@@ -19,6 +19,9 @@
 */
 
 #include "module.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include <irssi/src/core/signals.h>
 #include <irssi/src/core/masks.h>
 #include <irssi/src/core/settings.h>
@@ -29,12 +32,14 @@
 
 static void sig_dcc_request(GET_DCC_REC *dcc, const char *nickaddr)
 {
-        struct stat statbuf;
+	struct stat statbuf;
 	const char *masks;
-        char *str, *file, *esc_arg;
-        int max_size;
+	char *str, *base, *esc_arg;
+	int max_size;
+	gboolean exists;
 
-        if (!IS_DCC_GET(dcc)) return;
+	if (!IS_DCC_GET(dcc))
+		return;
 
 	/* check if we want to autoget file offer */
 	if (!settings_get_bool("dcc_autoget"))
@@ -42,41 +47,45 @@ static void sig_dcc_request(GET_DCC_REC *dcc, const char *nickaddr)
 
 	/* check for lowports */
 	if (dcc->port < 1024 && !settings_get_bool("dcc_autoaccept_lowports"))
-                return;
+		return;
 
 	/* check that autoget masks match */
 	masks = settings_get_str("dcc_autoget_masks");
-	if (*masks != '\0' &&
-	    !masks_match(SERVER(dcc->server), masks, dcc->nick, nickaddr))
+	if (*masks != '\0' && !masks_match(SERVER(dcc->server), masks, dcc->nick, nickaddr))
 		return;
 
 	/* Unless specifically said in dcc_autoget_masks, don't do autogets
 	   sent to channels. */
-	if (*masks == '\0' && dcc->target != NULL && server_ischannel(SERVER(dcc->server), dcc->target))
+	if (*masks == '\0' && dcc->target != NULL &&
+	    server_ischannel(SERVER(dcc->server), dcc->target))
 		return;
 
 	/* don't autoget files beginning with a dot, if download dir is
 	   our home dir (stupid kludge for stupid people) */
-	if (*dcc->arg == '.' &&
-	    g_strcmp0(settings_get_str("dcc_download_path"), "~") == 0)
+	if (*dcc->arg == '.' && g_strcmp0(settings_get_str("dcc_download_path"), "~") == 0)
 		return;
 
 	/* check file size limit, NOTE: it's still possible to send a
 	   bogus file size and then just send what ever sized file.. */
-        max_size = settings_get_size("dcc_autoget_max_size");
-	if (max_size > 0 && (uoff_t)max_size < dcc->size)
-                return;
+	max_size = settings_get_size("dcc_autoget_max_size");
+	if (max_size > 0 && (uoff_t) max_size < dcc->size)
+		return;
 
 	/* ok. but do we want/need to resume? */
-	file = dcc_get_download_path(dcc->arg);
+	if (dcc_download_dirfd == -1)
+		dcc_download_dirfd_open();
+
+	base = g_path_get_basename(dcc->arg);
+	exists = (dcc_download_dirfd != -1 &&
+	          fstatat(dcc_download_dirfd, base, &statbuf, AT_SYMLINK_NOFOLLOW) == 0);
+	g_free(base);
+
 	esc_arg = escape_string(dcc->arg);
-	str = g_strdup_printf(settings_get_bool("dcc_autoresume") &&
-			      stat(file, &statbuf) == 0 ?
-			      "RESUME %s \"%s\"" : "GET %s \"%s\"",
-			      dcc->nick, esc_arg);
+	str = g_strdup_printf(settings_get_bool("dcc_autoresume") && exists ? "RESUME %s \"%s\"" :
+	                                                                      "GET %s \"%s\"",
+	                      dcc->nick, esc_arg);
 	signal_emit("command dcc", 2, str, dcc->server);
 	g_free(esc_arg);
-        g_free(file);
 	g_free(str);
 }
 
