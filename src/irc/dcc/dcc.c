@@ -28,6 +28,7 @@
 #include <irssi/src/core/ignore.h>
 #include <irssi/src/core/levels.h>
 #include <irssi/src/fe-common/core/printtext.h>
+#include <irssi/src/fe-common/core/completion.h>
 #include <irssi/src/irc/core/irc-servers.h>
 #include <irssi/src/core/servers-setup.h>
 #include <irssi/src/core/core.h>
@@ -52,6 +53,75 @@ int dcc_download_dirfd = -1;
 int dcc_upload_dirfd = -1;
 char *last_dcc_download_path;
 char *last_dcc_upload_path;
+
+static void dcc_get_dir_completions(GList **list, const char *word)
+{
+	char *expanded;
+	char *dir_to_open;
+	char *prefix;
+	GDir *dir;
+	const char *entry;
+
+	if (word == NULL)
+		word = "";
+
+	expanded = convert_home(word);
+
+	/* Determine target directory and filename prefix to match against */
+	if (g_str_has_suffix(word, "/") || *word == '\0') {
+		dir_to_open = g_strdup(expanded[0] != '\0' ? expanded : ".");
+		prefix = g_strdup("");
+	} else {
+		dir_to_open = g_path_get_dirname(expanded);
+		prefix = g_path_get_basename(word);
+	}
+
+	dir = g_dir_open(dir_to_open, 0, NULL);
+	if (dir != NULL) {
+		char *orig_dir = g_path_get_dirname(word);
+
+		while ((entry = g_dir_read_name(dir)) != NULL) {
+			/* Skip hidden entries unless the user explicitly typed a dot */
+			if (entry[0] == '.' && prefix[0] != '.')
+				continue;
+
+			if (g_str_has_prefix(entry, prefix)) {
+				char *full_path = g_build_filename(dir_to_open, entry, NULL);
+
+				if (g_file_test(full_path, G_FILE_TEST_IS_DIR)) {
+					char *match;
+
+					if (g_strcmp0(orig_dir, ".") == 0 &&
+					    !g_str_has_prefix(word, "./")) {
+						match = g_strconcat(entry, "/", NULL);
+					} else if (g_str_has_suffix(orig_dir, "/")) {
+						match = g_strconcat(orig_dir, entry, "/", NULL);
+					} else {
+						match =
+						    g_strconcat(orig_dir, "/", entry, "/", NULL);
+					}
+					*list = g_list_append(*list, match);
+				}
+				g_free(full_path);
+			}
+		}
+		g_free(orig_dir);
+		g_dir_close(dir);
+	}
+
+	g_free(prefix);
+	g_free(dir_to_open);
+	g_free(expanded);
+}
+
+static void sig_complete_set(GList **list, const char *word, const char *line, const char *param)
+{
+	if (g_str_has_prefix(param, "dcc_download_path ") ||
+	    g_str_has_prefix(param, "dcc_upload_path ")) {
+		dcc_get_dir_completions(list, word);
+		signal_stop();
+	}
+}
 
 static char *dcc_clean_path(const char *path)
 {
@@ -728,6 +798,7 @@ void irc_dcc_init(void)
 	signal_add("ctcp reply dcc", (SIGNAL_FUNC) ctcp_reply_dcc);
 	signal_add("ctcp reply dcc reject", (SIGNAL_FUNC) ctcp_reply_dcc_reject);
 	signal_add("event 401", (SIGNAL_FUNC) event_no_such_nick);
+	signal_add("complete command set", (SIGNAL_FUNC) sig_complete_set);
 	command_bind("dcc", NULL, (SIGNAL_FUNC) cmd_dcc);
 	command_bind("dcc close", NULL, (SIGNAL_FUNC) cmd_dcc_close);
 
@@ -786,6 +857,7 @@ void irc_dcc_deinit(void)
 	signal_remove("ctcp reply dcc", (SIGNAL_FUNC) ctcp_reply_dcc);
 	signal_remove("ctcp reply dcc reject", (SIGNAL_FUNC) ctcp_reply_dcc_reject);
 	signal_remove("event 401", (SIGNAL_FUNC) event_no_such_nick);
+	signal_remove("complete command set", (SIGNAL_FUNC) sig_complete_set);
 	command_unbind("dcc", (SIGNAL_FUNC) cmd_dcc);
 	command_unbind("dcc close", (SIGNAL_FUNC) cmd_dcc_close);
 
